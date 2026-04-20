@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מחולל כב"כ | עידן</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;direction:rtl;min-height:100vh}
+
+/* LOGIN */
+.login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a1a2e,#0f3460)}
+.login-card{background:white;border-radius:20px;padding:40px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-logo{font-size:48px;margin-bottom:16px}
+.login-card h2{font-size:20px;color:#1a1a2e;margin-bottom:6px}
+.login-card p{font-size:13px;color:#888;margin-bottom:28px}
+.login-input{width:100%;padding:14px;border:2px solid #e0e0e0;border-radius:12px;font-size:16px;text-align:center;margin-bottom:14px;transition:.2s;font-family:inherit}
+.login-input:focus{outline:none;border-color:#0f3460}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,#e94560,#c0392b);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:.2s}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
+.login-error{color:#e94560;font-size:13px;margin-top:10px;display:none}
+
+/* MAIN APP */
+.app{display:none}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.header-title h1{font-size:20px;font-weight:700}
+.header-title h1 span{color:#e94560}
+.header-title p{font-size:12px;opacity:.6;margin-top:2px}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:white;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;transition:.2s}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
+
+/* LAYOUT */
+.main{padding:20px;max-width:1100px;margin:0 auto}
+@media(min-width:768px){.main{display:grid;grid-template-columns:300px 1fr;gap:20px}}
+
+/* CARDS */
+.card{background:white;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:16px}
+.card:last-child{margin-bottom:0}
+.card-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #f0f2f5;display:flex;align-items:center;gap:6px}
+
+/* TYPE GRID */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.type-btn{padding:10px 6px;border:2px solid #e0e0e0;border-radius:10px;cursor:pointer;text-align:center;transition:.2s;background:white;font-size:12px;font-weight:600;color:#666}
+.type-btn:hover{border-color:#0f3460;color:#0f3460}
+.type-btn.active{border-color:#0f3460;background:#0f3460;color:white}
+.type-btn .ti{font-size:18px;display:block;margin-bottom:3px}
+
+/* UPLOAD */
+.upload-area{border:2px dashed #c8d0e0;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:.2s;background:#fafbff;margin-bottom:14px}
+.upload-area:hover,.upload-area.over{border-color:#0f3460;background:#f0f4ff}
+.upload-area .ui{font-size:32px;margin-bottom:8px}
+.upload-area p{font-size:13px;color:#666}
+.upload-area small{font-size:11px;color:#aaa}
+#fi{display:none}
+
+/* FILE LIST */
+.file-item{display:flex;align-items:center;padding:8px 10px;background:#f8f9ff;border-radius:8px;margin-bottom:6px;font-size:12px;gap:8px}
+.file-item .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.file-item .fr{color:#e94560;cursor:pointer;font-weight:700;padding:0 4px;font-size:15px}
+
+/* NOTES */
+.notes-ta{width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:13px;resize:none;height:60px;font-family:inherit;margin-bottom:14px}
+.notes-ta:focus{outline:none;border-color:#0f3460}
+
+/* GENERATE BTN */
+.btn-gen{width:100%;padding:14px;background:linear-gradient(135deg,#e94560,#c0392b);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
+.btn-gen:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* GEMINI KEY */
+.gemini-row{display:flex;gap:8px;margin-bottom:14px}
+.gemini-row input{flex:1;padding:9px 12px;border:2px solid #e0e0e0;border-radius:10px;font-size:12px;direction:ltr;font-family:monospace}
+.gemini-row input:focus{outline:none;border-color:#4285f4}
+.gemini-hint{font-size:11px;color:#888;margin-top:-10px;margin-bottom:14px}
+.gemini-hint a{color:#4285f4}
+
+/* OUTPUT */
+.empty-state{text-align:center;padding:50px 20px;color:#bbb}
+.empty-state .ei{font-size:56px;margin-bottom:12px;opacity:.5}
+.empty-state h3{font-size:16px;color:#ccc;margin-bottom:6px}
+
+.loading{display:none;text-align:center;padding:40px 20px}
+.loading .li{font-size:40px;animation:pulse 1.5s ease-in-out infinite;display:block;margin-bottom:12px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.step{font-size:13px;color:#aaa;padding:3px 0;opacity:0;transition:opacity .5s}
+.step.on{opacity:1}
+.step.done{color:#27ae60}
+
+.error-box{background:#ffeef0;border:1px solid #e94560;border-radius:10px;padding:14px;color:#c0392b;font-size:13px;display:none;margin-bottom:16px}
+
+/* CHAPTERS */
+.boq-out{display:none}
+.boq-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.boq-header h2{font-size:18px;font-weight:700}
+.pbadge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600}
+.pb-office{background:#e3f2fd;color:#1565c0}
+.pb-apt{background:#e8f5e9;color:#2e7d32}
+.pb-com{background:#fff3e0;color:#e65100}
+
+.chapter{border:1px solid #e8ecf0;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.ch-head{background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:12px 16px;display:flex;align-items:center;cursor:pointer;gap:10px}
+.ch-head:hover{background:linear-gradient(135deg,#0f3460,#16213e)}
+.ch-num{background:rgba(233,69,96,.8);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.ch-name{flex:1;font-size:14px;font-weight:600}
+.ch-total{font-size:15px;font-weight:700;color:#ffd700;white-space:nowrap}
+
+.ch-body{display:none;overflow-x:auto}
+.ch-body.open{display:block}
+
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+th{background:#f5f7fa;padding:9px 12px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e8ecf0;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #f0f2f5;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.tid{color:#aaa;font-size:10px;font-family:monospace;width:80px}
+.tdesc{min-width:160px}
+.tunit{text-align:center;width:60px}
+.tqty{text-align:center;width:60px;font-weight:600}
+.tprice{text-align:left;direction:ltr;width:90px}
+.ttotal{text-align:left;direction:ltr;width:100px;font-weight:700;color:#0f3460}
+.tnotes{font-size:11px;color:#888;width:120px}
+.sub-row td{background:#f5f7fa!important;font-weight:700;border-top:2px solid #e0e0e0}
+
+/* GRAND TOTAL */
+.gt-card{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white;border-radius:14px;padding:20px;margin-top:4px}
+.gt-line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px}
+.gt-line:last-child{border:none}
+.gt-line.main{font-size:18px;font-weight:700;padding-top:14px}
+.gt-line.main .amt{color:#ffd700}
+.amt{direction:ltr}
+
+/* NOTES BOX */
+.notes-out{background:#fff8e1;border:1px solid #ffc107;border-radius:10px;padding:12px;font-size:12px;color:#795548;margin-top:12px;display:none}
+.notes-out ul{padding-right:18px}
+.notes-out li{margin-bottom:3px}
+
+/* EXPORT */
+.export-row{display:flex;gap:10px;margin-top:12px}
+.btn-exp{flex:1;padding:10px;border:2px solid;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:5px;background:white}
+.btn-exp.xl{border-color:#27ae60;color:#27ae60}
+.btn-exp.xl:hover{background:#27ae60;color:white}
+.btn-exp.cp{border-color:#0f3460;color:#0f3460}
+.btn-exp.cp:hover{background:#0f3460;color:white}
+
+/* MOBILE */
+@media(max-width:767px){
+  .header{padding:12px 16px}
+  .header-title h1{font-size:17px}
+  .main{padding:12px}
+  .card{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="login-page" id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">🏗️</div>
+    <h2>מחולל כתב כמויות</h2>
+    <p>עידן — כניסה למערכת</p>
+    <input class="login-input" type="password" id="pwInput" placeholder="סיסמה" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">כניסה →</button>
+    <div class="login-error" id="loginErr">סיסמה שגויה, נסה שוב</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="appPage">
+
+  <div class="header">
+    <div class="header-title">
+      <h1>מחולל כתב <span>כמויות</span></h1>
+      <p>העלה תוכנית → קבל כב"כ מיידי</p>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">יציאה</button>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT PANEL -->
+    <div id="leftPanel">
+
+      <!-- Gemini Key -->
+      <div class="card">
+        <div class="card-title">⚙️ הגדרות</div>
+
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:5px">Gemini API Key (חינם)</label>
+        <div class="gemini-row">
+          <input type="password" id="geminiKey" placeholder="AIzaSy..." autocomplete="off">
+        </div>
+        <p class="gemini-hint">
+          קבל חינם: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+        </p>
+
+        <!-- Project Type -->
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:7px">סוג פרויקט</label>
+        <div class="type-grid">
+          <div class="type-btn active" data-t="משרדים" onclick="selType(this)"><span class="ti">🏢</span>משרדים</div>
+          <div class="type-btn" data-t="דירה" onclick="selType(this)"><span class="ti">🏠</span>דירה</div>
+          <div class="type-btn" data-t="מסחרי" onclick="selType(this)"><span class="ti">🏪</span>מסחרי</div>
+          <div class="type-btn" data-t="אחר" onclick="selType(this)"><span class="ti">🔧</span>אחר</div>
+        </div>
+
+        <!-- Upload -->
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:7px">תוכניות</label>
+        <div class="upload-area" id="ua" onclick="document.getElementById('fi').click()">
+          <div class="ui">📐</div>
+          <p><strong>לחץ להעלאה</strong> או גרור</p>
+          <small>PNG · JPG · PDF עד 20MB</small>
+        </div>
+        <input type="file" id="fi" multiple accept="image/*" onchange="addFiles(this.files)">
+        <div id="fileList"></div>
+
+        <!-- Notes -->
+        <textarea class="notes-ta" id="notes" placeholder="הערות: שטח, מספר חדרים, פרטים נוספים..."></textarea>
+
+        <!-- Generate -->
+        <button class="btn-gen" id="genBtn" onclick="generate()">
+          <span class="spin" id="spin"></span>
+          <span id="genTxt">⚡ צור כתב כמויות</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="rightPanel">
+
+      <!-- Empty -->
+      <div class="card" id="emptyCard">
+        <div class="empty-state">
+          <div class="ei">📋</div>
+          <h3>ממתין לתוכניות</h3>
+          <p>העלה תוכנית ולחץ "צור כתב כמויות"</p>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="card" id="loadCard" style="display:none">
+        <div class="loading" style="display:block">
+          <span class="li">🔍</span>
+          <h3 style="font-size:15px;color:#1a1a2e;margin-bottom:14px">מנתח את התוכניות...</h3>
+          <div id="step1" class="step">📐 קורא תוכניות</div>
+          <div id="step2" class="step">📏 מודד כמויות</div>
+          <div id="step3" class="step">💰 מיישם מחירון 2026</div>
+          <div id="step4" class="step">📄 מכין כתב כמויות</div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="errBox"></div>
+
+      <!-- BOQ Output -->
+      <div class="boq-out card" id="boqOut">
+        <div class="boq-header">
+          <h2 id="boqTitle">כתב כמויות</h2>
+          <span class="pbadge pb-office" id="projBadge">משרדים</span>
+        </div>
+        <p id="boqSummary" style="font-size:13px;color:#666;margin-bottom:14px"></p>
+        <div id="chapters"></div>
+        <div class="gt-card" id="gtCard"></div>
+        <div class="notes-out" id="notesOut"><strong>⚠️ הערות:</strong><ul id="notesList"></ul></div>
+        <div class="export-row">
+          <button class="btn-exp xl" onclick="exportCSV()">📊 ייצא לאקסל</button>
+          <button class="btn-exp cp" onclick="copyAll()">📋 העתק</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let selProjectType = 'משרדים';
+let files = [];
+let boqData = null;
+
+// ---- LOGIN ----
+async function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  const r = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password: pw})
+  });
+  const d = await r.json();
+  if (d.success) {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appPage').style.display = 'block';
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', {method:'POST'});
+  location.reload();
+}
+
+// ---- TYPE ----
+function selType(el) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selProjectType = el.dataset.t;
+}
+
+// ---- FILES ----
+function addFiles(newFiles) {
+  for (const f of newFiles) {
+    if (!files.find(x => x.name === f.name)) files.push(f);
+  }
+  renderFiles();
+}
+
+function renderFiles() {
+  const el = document.getElementById('fileList');
+  el.innerHTML = files.map((f,i) => `
+    <div class="file-item">
+      <span>${f.type.startsWith('image/') ? '🖼️' : '📄'}</span>
+      <span class="fn">${f.name}</span>
+      <span class="fr" onclick="removeFile(${i})">✕</span>
+    </div>`).join('');
+}
+
+function removeFile(i) { files.splice(i,1); renderFiles(); }
+
+// Drag & Drop
+const ua = document.getElementById('ua');
+ua.addEventListener('dragover', e => { e.preventDefault(); ua.classList.add('over'); });
+ua.addEventListener('dragleave', () => ua.classList.remove('over'));
+ua.addEventListener('drop', e => { e.preventDefault(); ua.classList.remove('over'); addFiles(e.dataTransfer.files); });
+
+// ---- GENERATE ----
+async function generate() {
+  const gKey = document.getElementById('geminiKey').value.trim();
+  if (!gKey) return alert('יש להכניס Gemini API Key');
+  if (!files.length) return alert('יש להעלות לפחות תוכנית אחת');
+
+  setUI('loading');
+
+  const steps = ['step1','step2','step3','step4'];
+  let si = 0;
+  const iv = setInterval(() => {
+    if (si < steps.length) {
+      document.getElementById(steps[si]).classList.add('on');
+      if (si > 0) document.getElementById(steps[si-1]).classList.add('done');
+      si++;
+    }
+  }, 2000);
+
+  const fd = new FormData();
+  fd.append('projectType', selProjectType);
+  fd.append('notes', document.getElementById('notes').value);
+  files.forEach(f => fd.append('plans', f));
+
+  try {
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {'x-gemini-key': gKey},
+      body: fd
+    });
+    clearInterval(iv);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    boqData = d.boq;
+    renderBOQ(d.boq);
+    setUI('result');
+  } catch(e) {
+    clearInterval(iv);
+    showErr(e.message);
+    setUI('error');
+  }
+}
+
+function setUI(state) {
+  document.getElementById('emptyCard').style.display  = state==='empty'   ? '' : 'none';
+  document.getElementById('loadCard').style.display   = state==='loading' ? '' : 'none';
+  document.getElementById('boqOut').style.display     = state==='result'  ? '' : 'none';
+  document.getElementById('errBox').style.display     = 'none';
+  document.getElementById('genBtn').disabled = state==='loading';
+  document.getElementById('spin').style.display = state==='loading' ? 'block' : 'none';
+  document.getElementById('genTxt').textContent = state==='loading' ? 'מנתח...' : '⚡ צור כתב כמויות';
+  if (state==='loading') ['step1','step2','step3','step4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'step';
+  });
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errBox');
+  el.innerHTML = '❌ שגיאה: ' + msg;
+  el.style.display = 'block';
+}
+
+// ---- RENDER BOQ ----
+function renderBOQ(boq) {
+  document.getElementById('boqTitle').textContent = 'כתב כמויות — ' + selProjectType;
+  const badge = document.getElementById('projBadge');
+  badge.textContent = boq.project_type || selProjectType;
+  badge.className = 'pbadge ' + (
+    (boq.project_type||'').includes('דירה') ? 'pb-apt' :
+    (boq.project_type||'').includes('מסח') ? 'pb-com' : 'pb-office'
+  );
+  document.getElementById('boqSummary').textContent = boq.project_summary || '';
+
+  const cont = document.getElementById('chapters');
+  cont.innerHTML = (boq.chapters||[]).map((ch,i) => `
+    <div class="chapter">
+      <div class="ch-head" onclick="toggleCh(${i})">
+        <span class="ch-num">${ch.chapter_num}</span>
+        <span class="ch-name">${ch.chapter_name}</span>
+        <span class="ch-total">${fmt(ch.chapter_total)}</span>
+      </div>
+      <div class="ch-body open" id="cb${i}">
+        <table>
+          <thead><tr>
+            <th class="tid">סעיף</th>
+            <th class="tdesc">תיאור</th>
+            <th class="tunit">יח'</th>
+            <th class="tqty">כמות</th>
+            <th class="tprice">מחיר</th>
+            <th class="ttotal">סה"כ</th>
+            <th class="tnotes">הערות</th>
+          </tr></thead>
+          <tbody>
+            ${(ch.items||[]).map(it=>`
+              <tr>
+                <td class="tid">${it.id||''}</td>
+                <td class="tdesc">${it.description||''}</td>
+                <td class="tunit">${it.unit||''}</td>
+                <td class="tqty">${it.quantity||''}</td>
+                <td class="tprice">${fmt(it.unit_price)}</td>
+                <td class="ttotal">${fmt(it.total)}</td>
+                <td class="tnotes">${it.notes||''}</td>
+              </tr>`).join('')}
+            <tr class="sub-row">
+              <td colspan="5" style="text-align:right">סה"כ פרק ${ch.chapter_num}</td>
+              <td class="ttotal">${fmt(ch.chapter_total)}</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
+
+  const vat = (boq.grand_total||0) * 0.18;
+  const tot = (boq.grand_total||0) + vat;
+  document.getElementById('gtCard').innerHTML = `
+    <div class="gt-line"><span>סכום לפני מע"מ</span><span class="amt">${fmt(boq.grand_total)}</span></div>
+    <div class="gt-line"><span>מע"מ 18%</span><span class="amt">${fmt(vat)}</span></div>
+    <div class="gt-line main"><span>סה"כ כולל מע"מ</span><span class="amt">${fmt(tot)}</span></div>`;
+
+  if (boq.notes?.length) {
+    document.getElementById('notesOut').style.display = 'block';
+    document.getElementById('notesList').innerHTML = boq.notes.map(n=>`<li>${n}</li>`).join('');
+  }
+}
+
+function toggleCh(i) { document.getElementById('cb'+i).classList.toggle('open'); }
+
+function fmt(n) {
+  if (!n && n!==0) return '—';
+  return '₪' + Number(n).toLocaleString('he-IL',{maximumFractionDigits:0});
+}
+
+// ---- EXPORT ----
+function exportCSV() {
+  if (!boqData) return;
+  let csv = '\uFEFF';
+  csv += 'סעיף,תיאור,יחידה,כמות,מחיר יחידה,סה"כ,הערות\n';
+  (boqData.chapters||[]).forEach(ch => {
+    csv += `\n"פרק ${ch.chapter_num} — ${ch.chapter_name}",,,,,,\n`;
+    (ch.items||[]).forEach(it => {
+      csv += `"${it.id||''}","${it.description||''}","${it.unit||''}",${it.quantity||0},${it.unit_price||0},${it.total||0},"${it.notes||''}"\n`;
+    });
+    csv += `"סה"כ פרק",,,,,"${ch.chapter_total}",\n`;
+  });
+  csv += `\n"סה"כ כללי",,,,,"${boqData.grand_total}",\n`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `כבכ_${selProjectType}_${new Date().toLocaleDateString('he-IL').replace(/\//g,'-')}.csv`;
+  a.click();
+}
+
+function copyAll() {
+  if (!boqData) return;
+  let txt = `כתב כמויות — ${selProjectType}\n${'='.repeat(40)}\n`;
+  (boqData.chapters||[]).forEach(ch => {
+    txt += `\nפרק ${ch.chapter_num} — ${ch.chapter_name}\n`;
+    (ch.items||[]).forEach(it => {
+      txt += `  ${it.id}: ${it.description} | ${it.quantity} ${it.unit} | ₪${it.unit_price} → ₪${it.total}\n`;
+    });
+    txt += `  סה"כ: ₪${ch.chapter_total}\n`;
+  });
+  txt += `\nסה"כ כולל מע"מ: ₪${Math.round((boqData.grand_total||0)*1.18)}`;
+  navigator.clipboard.writeText(txt).then(() => alert('הועתק!'));
+}
+</script>
+</body>
+</html>
