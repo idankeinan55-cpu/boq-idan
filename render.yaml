@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: boq-idan
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: APP_PASSWORD
+        value: idan2026
+      - key: GEMINI_API_KEY
+        value: ""
+      - key: SECRET_KEY
+        generateValue: true
