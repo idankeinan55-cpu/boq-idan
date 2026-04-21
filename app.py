@@ -229,8 +229,8 @@ SYSTEM_PROMPT = """אתה מומחה לכתיבת כתבי כמויות (כב"כ
 
 @app.route('/')
 def index():
-    
-return send_from_directory('.', 'index.html')
+    return send_from_directory('.', 'index.html')
+
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -267,14 +267,12 @@ def analyze():
         genai.configure(api_key=gemini_key)
         model = genai.GenerativeModel('gemini-1.5-flash')
 
-        # בנה תוכן
         parts = [SYSTEM_PROMPT]
 
         for f in files:
             img_bytes = f.read()
             try:
                 img = Image.open(io.BytesIO(img_bytes))
-                # המר ל-RGB אם צריך
                 if img.mode not in ('RGB', 'L'):
                     img = img.convert('RGB')
                 buf = io.BytesIO()
@@ -284,7 +282,6 @@ def analyze():
                     'data': buf.getvalue()
                 })
             except Exception:
-                # אם לא תמונה — נסה כ-bytes ישיר
                 parts.append({
                     'mime_type': f.content_type or 'image/jpeg',
                     'data': img_bytes
@@ -299,7 +296,6 @@ def analyze():
         response = model.generate_content(parts)
         raw = response.text
 
-        # חלץ JSON
         json_match = re.search(r'\{[\s\S]*\}', raw)
         boq = json.loads(json_match.group() if json_match else raw)
 
