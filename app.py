@@ -9,7 +9,7 @@ import base64, json, re, os
 from PIL import Image
 import io
 
-app = Flask(__name__, static_folder='public', static_url_path='')
+app = Flask(__name__, static_folder='.', static_url_path='')
 app.secret_key = os.environ.get('SECRET_KEY', 'boq-idan-2026-secret')
 
 # ==========================================
@@ -229,8 +229,8 @@ SYSTEM_PROMPT = """אתה מומחה לכתיבת כתבי כמויות (כב"כ
 
 @app.route('/')
 def index():
-    return send_from_directory('public', 'index.html')
-
+    
+return send_from_directory('.', 'index.html')
 
 @app.route('/api/login', methods=['POST'])
 def login():
