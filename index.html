@@ -1,315 +1,747 @@
-"""
-מחולל כתב כמויות — אידן
-Flask + Google Gemini (חינם)
-"""
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מחולל כב"כ | עידן</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f0f2f5;color:#1a1a2e;direction:rtl;min-height:100vh}
 
-from flask import Flask, request, jsonify, session, send_from_directory
-import google.generativeai as genai
-import base64, json, re, os
-from PIL import Image
-import io
+/* LOGIN */
+.login-page{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#1a1a2e,#0f3460)}
+.login-card{background:white;border-radius:20px;padding:40px;width:320px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3)}
+.login-logo{font-size:48px;margin-bottom:16px}
+.login-card h2{font-size:20px;color:#1a1a2e;margin-bottom:6px}
+.login-card p{font-size:13px;color:#888;margin-bottom:28px}
+.login-input{width:100%;padding:14px;border:2px solid #e0e0e0;border-radius:12px;font-size:16px;text-align:center;margin-bottom:14px;transition:.2s;font-family:inherit}
+.login-input:focus{outline:none;border-color:#0f3460}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,#e94560,#c0392b);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:.2s}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
+.login-error{color:#e94560;font-size:13px;margin-top:10px;display:none}
 
-app = Flask(__name__, static_folder='public', static_url_path='')
-app.secret_key = os.environ.get('SECRET_KEY', 'boq-idan-2026-secret')
+/* MAIN APP */
+.app{display:none}
 
-# ==========================================
-# הגדרות — שנה כאן
-# ==========================================
-APP_PASSWORD   = os.environ.get('APP_PASSWORD', 'idan2026')
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,.3)}
+.header-title h1{font-size:20px;font-weight:700}
+.header-title h1 span{color:#e94560}
+.header-title p{font-size:12px;opacity:.6;margin-top:2px}
+.btn-logout{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.3);color:white;padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;transition:.2s}
+.btn-logout:hover{background:rgba(255,255,255,.2)}
 
-# ==========================================
-# SYSTEM PROMPT — כל הידע
-# ==========================================
-SYSTEM_PROMPT = """אתה מומחה לכתיבת כתבי כמויות (כב"כ) לפרויקטי בנייה ושיפוץ בישראל.
-נתח את התוכניות שמועלות ותפיק כתב כמויות מפורט ומדויק.
+/* LAYOUT */
+.main{padding:20px;max-width:1100px;margin:0 auto}
+@media(min-width:768px){.main{display:grid;grid-template-columns:300px 1fr;gap:20px}}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## מבנה פרקים סטנדרטי
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-06 = נגרות אומן
-07 = מתקני תברואה ואינסטלציה
-08 = מערכות חשמל ותקשורת
-10 = ריצוף וחיפוי
-11 = צביעה
-12 = מחיצות מודולריות (זכוכית)
-15 = מיזוג אוויר
-22 = גבס ותקרות
-34 = גילוי אש ועשן
-79 = ברג'י ושונות
-99 = תוספות ושינויים (תמיד "לא לסיכום")
+/* CARDS */
+.card{background:white;border-radius:16px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:16px}
+.card:last-child{margin-bottom:0}
+.card-title{font-size:14px;font-weight:700;color:#1a1a2e;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #f0f2f5;display:flex;align-items:center;gap:6px}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## כללי ברזל — קריטי!
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* TYPE GRID */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.type-btn{padding:10px 6px;border:2px solid #e0e0e0;border-radius:10px;cursor:pointer;text-align:center;transition:.2s;background:white;font-size:12px;font-weight:600;color:#666}
+.type-btn:hover{border-color:#0f3460;color:#0f3460}
+.type-btn.active{border-color:#0f3460;background:#0f3460;color:white}
+.type-btn .ti{font-size:18px;display:block;margin-bottom:3px}
 
-### פרק 06 — נגרות = תמיד בתוך הכב"כ עם total אמיתי!
-- נגרות נכנסת לסיכום הכולל עם מחיר מלא
-- ארון גדול במשרד = ארון טכני/מדפסת/תקשורת — לא ארון תלבושות!
+/* UPLOAD */
+.upload-area{border:2px dashed #c8d0e0;border-radius:12px;padding:24px 16px;text-align:center;cursor:pointer;transition:.2s;background:#fafbff;margin-bottom:14px}
+.upload-area:hover,.upload-area.over{border-color:#0f3460;background:#f0f4ff}
+.upload-area .ui{font-size:32px;margin-bottom:8px}
+.upload-area p{font-size:13px;color:#666}
+.upload-area small{font-size:11px;color:#aaa}
+#fi{display:none}
 
-### פרק 15 — מיזוג = תמיד בתוך הכב"כ עם total אמיתי!
-- מיזוג נכנס לסיכום הכולל עם מחיר מלא
-- כולל: מעבה, יחידות פנימיות, תעלות, שרשוריים, מפזרי אוויר
+/* FILE LIST */
+.file-item{display:flex;align-items:center;padding:8px 10px;background:#f8f9ff;border-radius:8px;margin-bottom:6px;font-size:12px;gap:8px}
+.file-item .fn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.file-item .fr{color:#e94560;cursor:pointer;font-weight:700;padding:0 4px;font-size:15px}
 
-### שיש = אורך מטבח × 2
-- שיש כולל משטח עבודה + חיפוי אחורי (בין ארון עליון לתחתון)
-- דוגמה: מטבח 209 ס"מ → שיש = 4.18 מ"א
+/* NOTES */
+.notes-ta{width:100%;padding:10px;border:2px solid #e0e0e0;border-radius:10px;font-size:13px;resize:none;height:60px;font-family:inherit;margin-bottom:14px}
+.notes-ta:focus{outline:none;border-color:#0f3460}
 
-### פרק 99 — תמיד "לא לסיכום"
-- chapter_total=0, לא נכנס ל-grand_total
+/* GENERATE BTN */
+.btn-gen{width:100%;padding:14px;background:linear-gradient(135deg,#e94560,#c0392b);color:white;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-gen:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(233,69,96,.4)}
+.btn-gen:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.spin{width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## מחיצה גבס + זכוכית — שיטת מדידה
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-כאשר רואים מחיצה עם מספרים קטנים ליד הזכוכית:
-- המספרים הקטנים = קטעי גבס
-- זכוכית = סה"כ אורך מחיצה − סכום קטעי הגבס
-- דוגמה: 456 ס"מ מחיצה − (80+87+65) גבס = 224 ס"מ זכוכית
+/* GEMINI KEY */
+.gemini-row{display:flex;gap:8px;margin-bottom:14px}
+.gemini-row input{flex:1;padding:9px 12px;border:2px solid #e0e0e0;border-radius:10px;font-size:12px;direction:ltr;font-family:monospace}
+.gemini-row input:focus{outline:none;border-color:#4285f4}
+.gemini-hint{font-size:11px;color:#888;margin-top:-10px;margin-bottom:14px}
+.gemini-hint a{color:#4285f4}
 
-### פרט חולף/סכין:
-- 30 ס"מ = חיבור עם קיר גבס → 1 יח'
-- 10 ס"מ = חיבור עם עמוד → 1 יח'
+/* OUTPUT */
+.empty-state{text-align:center;padding:50px 20px;color:#bbb}
+.empty-state .ei{font-size:56px;margin-bottom:12px;opacity:.5}
+.empty-state h3{font-size:16px;color:#ccc;margin-bottom:6px}
 
-### הכנה עתידית — לא קיר!
-- "סינר+חיזוק למחיצת זכוכית עתידית" = הכנה בלבד, לא לכלול כקיר
+.loading{display:none;text-align:center;padding:40px 20px}
+.loading .li{font-size:40px;animation:pulse 1.5s ease-in-out infinite;display:block;margin-bottom:12px}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.step{font-size:13px;color:#aaa;padding:3px 0;opacity:0;transition:opacity .5s}
+.step.on{opacity:1}
+.step.done{color:#27ae60}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## יחידות מידה לפי סעיף
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- קיר גבס / ציפוי / תקרות → מ"ר
-- סינר אנכי / גליף / פרט וילון → מ"א (לא מ"ר!)
-- שיש → מ"א (מטר אורך)
-- נקודות חשמל/אינסטלציה → נק'
-- מטבח / נגרות / ארונות → קומפ'
-- פרט חולף/סכין → יח'
+.error-box{background:#ffeef0;border:1px solid #e94560;border-radius:10px;padding:14px;color:#c0392b;font-size:13px;display:none;margin-bottom:16px}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## מחירון ישראל 2026 (כולל עבודה+חומר, לפני מע"מ)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* CHAPTERS */
+.boq-out{display:none}
+.boq-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.boq-header h2{font-size:18px;font-weight:700}
+.pbadge{padding:5px 14px;border-radius:20px;font-size:12px;font-weight:600}
+.pb-office{background:#e3f2fd;color:#1565c0}
+.pb-apt{background:#e8f5e9;color:#2e7d32}
+.pb-com{background:#fff3e0;color:#e65100}
 
-### פרק 06 — נגרות (total אמיתי — נכנס לסיכום!)
-- מטבח MDF פורמייקה: 1,400/מ"א
-- מטבח MDF פולימר: 1,700/מ"א
-- מטבח קומפלט 5 מ"א: 30,000 קומפ'
-- ארון מדפסת/חשמל/תקשורת: 16,800 קומפ'
-- מטבח משרדי עליון+תחתון+בר: 17,600 קומפ'
-- ארון אחסון: 8,760 קומפ'
-- דלת פנים MDF: 1,600/יח'
-- ארון קיר MDF: 1,300/מ"א
+.chapter{border:1px solid #e8ecf0;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.ch-head{background:linear-gradient(135deg,#1a1a2e,#16213e);color:white;padding:12px 16px;display:flex;align-items:center;cursor:pointer;gap:10px}
+.ch-head:hover{background:linear-gradient(135deg,#0f3460,#16213e)}
+.ch-num{background:rgba(233,69,96,.8);padding:2px 8px;border-radius:6px;font-size:12px;font-weight:700;white-space:nowrap}
+.ch-name{flex:1;font-size:14px;font-weight:600}
+.ch-total{font-size:15px;font-weight:700;color:#ffd700;white-space:nowrap}
 
-### פרק 07 — תברואה
-- נקודת אינסטלציה כיור (ח'+ק'+ניקוז): 1,100/נק'
-- ניקוז קו 4": 550/יח'
-- סילוקית Sanisan: 1,200/יח'
-- כיור נירוסטה 55: 1,500 + התקנה נפרד
-- ברז מטבח נשלף: 1,000
-- אסלה תלויה: 1,900
-- מיכל הדחה TECE: 810
-- ניקוז מזגן PVC: 800/נק'
-- ברז זמני לעבודה: 500 קומפ'
-**כלל:** משרד ללא שירותים = רק כיור + ניקוז ≈ 2,400 ₪ סה"כ
+.ch-body{display:none;overflow-x:auto}
+.ch-body.open{display:block}
 
-### פרק 08 — חשמל
-- לוח חשמל ראשי: 1,800 קומפ'
-- כבל הזנה ראשי: 6,500 קומפ' ← **לא לשכוח!**
-- לוח תקשורת: 1,700 קומפ' ← **לא לשכוח!**
-- שקע רגיל 16A: 380/יח'
-- שקע מיזוג: 360/יח'
-- נקודת תאורה: 380/יח'
-- נקודת CAT7: 380/יח'
-- פנל LED 60×60: 320/יח'
-- ניתוק תאורה+מיזוג סוף יום: 750/יח' ← **לא לשכוח!**
-- בדיקת מהנדס בודק חשמל: 1,400 ← **חובה חוקית, לא לשכוח!**
-- הכנה לתרמוסטט מיזוג: 380/יח'
-- הכנה לווילון חשמלי: 270/מ"א
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:500px}
+th{background:#f5f7fa;padding:9px 12px;text-align:right;font-weight:600;color:#555;border-bottom:2px solid #e8ecf0;white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid #f0f2f5;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.tid{color:#aaa;font-size:10px;font-family:monospace;width:80px}
+.tdesc{min-width:160px}
+.tunit{text-align:center;width:60px}
+.tqty{text-align:center;width:60px;font-weight:600}
+.tprice{text-align:left;direction:ltr;width:90px}
+.ttotal{text-align:left;direction:ltr;width:100px;font-weight:700;color:#0f3460}
+.tnotes{font-size:11px;color:#888;width:120px}
+.sub-row td{background:#f5f7fa!important;font-weight:700;border-top:2px solid #e0e0e0}
 
-### פרק 10 — ריצוף וחיפוי
-- קרמיקה רגילה: 130/מ"ר
-- פורצלן איכותי: 240/מ"ר
-- אריחים גדולים 60×120: 400/מ"ר
-- SPC (פרקט פולימרי): 195/מ"ר
-- שיש מטבח חברון: 500/מ"א
-- שיש קיסרסטון: 1,100/מ"א
-- שיש גרניט טבעי: 1,700/מ"א
-- שיש פורצלן סינתטי: 2,000/מ"א
-- מדה מתפלסת: 80/מ"ר
+/* GRAND TOTAL */
+.gt-card{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white;border-radius:14px;padding:20px;margin-top:4px}
+.gt-line{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.1);font-size:13px}
+.gt-line:last-child{border:none}
+.gt-line.main{font-size:18px;font-weight:700;padding-top:14px}
+.gt-line.main .amt{color:#ffd700}
+.amt{direction:ltr}
 
-### פרק 11 — צביעה
-- לטקס קיר+תקרה (2 שכבות): 45/מ"ר
-- צביעת תקרה בלבד: 12/מ"ר
-- שליכט גמר: 130/מ"ר
-- צבע פנים איכותי: 70/מ"ר
+/* NOTES BOX */
+.notes-out{background:#fff8e1;border:1px solid #ffc107;border-radius:10px;padding:12px;font-size:12px;color:#795548;margin-top:12px;display:none}
+.notes-out ul{padding-right:18px}
+.notes-out li{margin-bottom:3px}
 
-### פרק 12 — מחיצות מודולריות (זכוכית)
-- זכוכית WLP1 סינגל: 750/מ"ר
-- זכוכית WLP2 דאבל (אקוסטי): 1,100/מ"ר
-- דלת זכוכית אלומינים: 3,800/יח'
-- דלת אטומה שירותים: 5,250/יח'
-- SHOP DRAWINGS: 1,000 קומפ' ← **תמיד לכלול!**
-- פרט חולף/סכין: 300/יח'
+/* EXPORT */
+.export-row{display:flex;gap:10px;margin-top:12px}
+.btn-exp{flex:1;padding:10px;border:2px solid;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:.2s;display:flex;align-items:center;justify-content:center;gap:5px;background:white}
+.btn-exp.xl{border-color:#27ae60;color:#27ae60}
+.btn-exp.xl:hover{background:#27ae60;color:white}
+.btn-exp.cp{border-color:#0f3460;color:#0f3460}
+.btn-exp.cp:hover{background:#0f3460;color:white}
 
-### פרק 22 — גבס ותקרות
-- מחיצת גבס 10 ס"מ: 250/מ"ר
-- ציפוי קיר גבס: 180/מ"ר
-- ציפוי קיר גבס ירוק (רטיבות): 220/מ"ר
-- תקרת גבס: 300/מ"ר
-- תקרה אקוסטית 60×60 מינרלי: 220/מ"ר
-- תקרת FOCUS E T-24: 340/מ"ר
-- תקרת FOCUS LP 60×120: 400/מ"ר
-- סינר לוילון: 240/מ"א
-- פס תקרה / כרכוב: 270/מ"א
-- שפכטל+צביעה על גבס: 85/מ"ר
-- פתחי שירות מיזוג: 500/יח' (2 פתחים בד"כ)
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:20px;background:white;border-radius:12px;padding:4px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.tab-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:#888;transition:.2s;font-family:inherit}
+.tab-btn.active{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white}
 
-### פרק 34 — גילוי אש
-- לוח גילוי אש אנלוגי: 10,000 קומפ'
-- גלאי עשן: 420/יח'
-- גלאי חום: 350/יח'
-- לחצן ניפוץ: 220/יח'
-- צופר+נצנץ: 300/יח'
-- מנורת סימון יציאה: 250/יח'
-- ספרינקלר: 25/מ"ר
-- ליווי מכון תקנים: 3,000 קומפ'
-- רמקול בתקרה אקוסטית: 500/יח'
+/* EMAIL FORM */
+.email-form input,.email-form textarea,.email-form select{width:100%;padding:11px 14px;border:2px solid #e0e0e0;border-radius:10px;font-size:14px;font-family:inherit;margin-bottom:12px;transition:.2s}
+.email-form input:focus,.email-form textarea:focus{outline:none;border-color:#0f3460}
+.email-form label{font-size:12px;color:#888;display:block;margin-bottom:4px;font-weight:600}
+.email-form textarea{resize:none;height:80px}
+.profit-row{display:flex;gap:10px;align-items:flex-end}
+.profit-row>div{flex:1}
+.email-out{background:#f8f9ff;border:2px solid #e0e8ff;border-radius:12px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;direction:rtl;display:none;margin-top:16px}
+.btn-copy-email{width:100%;padding:11px;background:#0f3460;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;transition:.2s}
+.btn-copy-email:hover{background:#1a1a2e}
 
-### פרק 79 — ברג'י ושונות
-- ניהול פרויקט + פינוי פסולת: 2,000 קומפ'
-- מכולת פסולת (12 מ"ק): 1,350/יח'
-- OCB חשמל זמני: 2,000 קומפ'
-- תאורת עבודה זמנית: 1,000 קומפ'
-- ניהול בטיחות (סיור+כניסה+סיום): 4,000 קומפ'
-- ניקיון סופי לאחר עבודה: 6,600 קומפ'
-- מיגון לובי (דרישת חברת ניהול): 2,500 קומפ'
-- תכנון יועץ בטיחות ואישורים: 5,000 קומפ'
+/* MOBILE */
+@media(max-width:767px){
+  .header{padding:12px 16px}
+  .header-title h1{font-size:17px}
+  .main{padding:12px}
+  .card{padding:16px}
+}
+</style>
+</head>
+<body>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## שגיאות נפוצות — להימנע בכל מחיר
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- שיש = אורך מטבח בלבד ← שגוי! × 2
-- פרק 69 לברג'י ← שגוי! פרק **79**
-- תברואה מורכבת במשרד ללא שירותים ← רק כיור+ניקוז = ~2,400
-- לספור "הכנה לזכוכית עתידית" כקיר ← זה הכנה בלבד!
-- שכחת כבל הזנה ראשי, ניתוק סוף יום, מהנדס בודק ← חובה!
-- SHOP DRAWINGS לזכוכית ← חובה לכלול!
-- ספירת "חדרים לשירותים" כשירותים ← ציר צינורות, לא שירותים!
-- ארון גדול במשרד = תלבושות ← זה ארון טכני/מדפסת/תקשורת!
+<!-- LOGIN PAGE -->
+<div class="login-page" id="loginPage">
+  <div class="login-card">
+    <div class="login-logo">🏗️</div>
+    <h2>מחולל כתב כמויות</h2>
+    <p>עידן — כניסה למערכת</p>
+    <input class="login-input" type="password" id="pwInput" placeholder="סיסמה" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="login-btn" onclick="doLogin()">כניסה →</button>
+    <div class="login-error" id="loginErr">סיסמה שגויה, נסה שוב</div>
+  </div>
+</div>
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-## פורמט תשובה — JSON בלבד, ללא טקסט אחר
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-{
-  "project_type": "סוג הפרויקט",
-  "project_summary": "תיאור קצר",
-  "chapters": [
-    {
-      "chapter_num": "06",
-      "chapter_name": "נגרות אומן",
-      "items": [
-        {
-          "id": "06.1.010",
-          "description": "תיאור מפורט",
-          "unit": "קומפ'",
-          "quantity": 1,
-          "unit_price": 17600,
-          "total": 17600,
-          "notes": ""
-        }
-      ],
-      "chapter_total": 17600
+<!-- MAIN APP -->
+<div class="app" id="appPage">
+
+  <div class="header">
+    <div class="header-title">
+      <h1>מחולל כתב <span>כמויות</span></h1>
+      <p>העלה תוכנית → קבל כב"כ מיידי</p>
+    </div>
+    <button class="btn-logout" onclick="doLogout()">יציאה</button>
+  </div>
+
+  <div style="max-width:1100px;margin:0 auto;padding:16px 20px 0">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('boq',this)">⚡ כתב כמויות</button>
+      <button class="tab-btn" onclick="switchTab('email',this)">✉️ מייל תוספת ללקוח</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- LEFT PANEL -->
+    <div id="leftPanel">
+
+      <!-- Gemini Key -->
+      <div class="card">
+        <div class="card-title">⚙️ הגדרות</div>
+
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:5px">Gemini API Key (חינם)</label>
+        <div class="gemini-row">
+          <input type="password" id="geminiKey" placeholder="AIzaSy..." autocomplete="off">
+        </div>
+        <p class="gemini-hint">
+          קבל חינם: <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a>
+        </p>
+
+        <!-- Project Type -->
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:7px">סוג פרויקט</label>
+        <div class="type-grid">
+          <div class="type-btn active" data-t="משרדים" onclick="selType(this)"><span class="ti">🏢</span>משרדים</div>
+          <div class="type-btn" data-t="דירה" onclick="selType(this)"><span class="ti">🏠</span>דירה</div>
+          <div class="type-btn" data-t="מסחרי" onclick="selType(this)"><span class="ti">🏪</span>מסחרי</div>
+          <div class="type-btn" data-t="אחר" onclick="selType(this)"><span class="ti">🔧</span>אחר</div>
+        </div>
+
+        <!-- Upload -->
+        <label style="font-size:11px;color:#888;display:block;margin-bottom:7px">תוכניות</label>
+        <div class="upload-area" id="ua" onclick="document.getElementById('fi').click()">
+          <div class="ui">📐</div>
+          <p><strong>לחץ להעלאה</strong> או גרור</p>
+          <small>PNG · JPG · PDF עד 20MB</small>
+        </div>
+        <input type="file" id="fi" multiple accept="image/*" onchange="addFiles(this.files)">
+        <div id="fileList"></div>
+
+        <!-- Notes -->
+        <textarea class="notes-ta" id="notes" placeholder="הערות: שטח, מספר חדרים, פרטים נוספים..."></textarea>
+
+        <!-- Generate -->
+        <button class="btn-gen" id="genBtn" onclick="generate()">
+          <span class="spin" id="spin"></span>
+          <span id="genTxt">⚡ צור כתב כמויות</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div id="rightPanel">
+
+      <!-- Empty -->
+      <div class="card" id="emptyCard">
+        <div class="empty-state">
+          <div class="ei">📋</div>
+          <h3>ממתין לתוכניות</h3>
+          <p>העלה תוכנית ולחץ "צור כתב כמויות"</p>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="card" id="loadCard" style="display:none">
+        <div class="loading" style="display:block">
+          <span class="li">🔍</span>
+          <h3 style="font-size:15px;color:#1a1a2e;margin-bottom:14px">מנתח את התוכניות...</h3>
+          <div id="step1" class="step">📐 קורא תוכניות</div>
+          <div id="step2" class="step">📏 מודד כמויות</div>
+          <div id="step3" class="step">💰 מיישם מחירון 2026</div>
+          <div id="step4" class="step">📄 מכין כתב כמויות</div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="errBox"></div>
+
+      <!-- BOQ Output -->
+      <div class="boq-out card" id="boqOut">
+        <div class="boq-header">
+          <h2 id="boqTitle">כתב כמויות</h2>
+          <span class="pbadge pb-office" id="projBadge">משרדים</span>
+        </div>
+        <p id="boqSummary" style="font-size:13px;color:#666;margin-bottom:14px"></p>
+        <div id="chapters"></div>
+        <div class="gt-card" id="gtCard"></div>
+        <div class="notes-out" id="notesOut"><strong>⚠️ הערות:</strong><ul id="notesList"></ul></div>
+        <div class="export-row">
+          <button class="btn-exp xl" onclick="exportCSV()">📊 ייצא לאקסל</button>
+          <button class="btn-exp cp" onclick="copyAll()">📋 העתק</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- EMAIL TAB -->
+  <div id="emailTab" style="display:none;max-width:700px;margin:0 auto;padding:0 20px 30px">
+    <div class="card">
+      <div class="card-title">✉️ מייל תוספת ללקוח</div>
+      <div class="email-form">
+
+        <label>שם הפרויקט</label>
+        <input type="text" id="eProjName" placeholder='לדוגמה: תמי צרפתי נס ציונה'>
+
+        <label>שם הלקוח</label>
+        <input type="text" id="eClientName" placeholder="לדוגמה: תמי">
+
+        <label>תאריך לשליחה</label>
+        <input type="date" id="eSendDate">
+
+        <label>תאריך דדליין לאישור (אופציונלי)</label>
+        <input type="date" id="eDeadline">
+
+        <label>תיאור התוספת — חפש במחירון</label>
+        <div style="position:relative">
+          <input type="text" id="eSearch" placeholder='לדוגמה: מחיצת גבס, מונה חשמל, ריצוף SPC...' oninput="searchPrice(this.value)" autocomplete="off">
+          <div id="suggestions" style="position:absolute;top:100%;right:0;left:0;background:white;border:2px solid #0f3460;border-radius:10px;z-index:99;display:none;max-height:200px;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.15)"></div>
+        </div>
+
+        <div id="priceFoundBox" style="display:none;background:#e8f5e9;border:1px solid #4caf50;border-radius:8px;padding:10px 14px;font-size:13px;color:#2e7d32;margin-bottom:12px">
+          ✅ נמצא במחירון: <strong id="priceFoundName"></strong> — <strong id="priceFoundVal"></strong>
+        </div>
+        <div id="priceNotFoundBox" style="display:none;background:#fff8e1;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;font-size:13px;color:#795548;margin-bottom:12px">
+          ⚠️ לא נמצא במחירון — הזן מחיר ידנית
+        </div>
+
+        <label>תיאור מלא לכלול במייל</label>
+        <textarea id="eDesc" placeholder="תיאור מפורט של התוספת..."></textarea>
+
+        <div class="profit-row">
+          <div>
+            <label>מחיר בסיס (₪ לפני מע"מ) — <span style="color:#27ae60;font-weight:600">ניתן לשנות</span></label>
+            <input type="number" id="ePrice" placeholder="0">
+          </div>
+          <div>
+            <label>תוספת רווח (%)</label>
+            <input type="number" id="eProfit" placeholder="0" value="0">
+          </div>
+        </div>
+
+        <div style="background:#f0f4ff;border-radius:8px;padding:10px 14px;font-size:13px;color:#0f3460;margin-bottom:14px" id="ePricePreview"></div>
+
+        <button class="btn-gen" onclick="generateEmail()">✉️ צור מייל</button>
+
+        <div class="email-out" id="emailOut"></div>
+        <button class="btn-copy-email" id="copyEmailBtn" style="display:none" onclick="copyEmail()">📋 העתק מייל</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+let selProjectType = 'משרדים';
+let files = [];
+let boqData = null;
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const boqMain = document.querySelector('.main');
+  const emailTab = document.getElementById('emailTab');
+  if (tab === 'boq') {
+    boqMain.style.display = '';
+    emailTab.style.display = 'none';
+  } else {
+    boqMain.style.display = 'none';
+    emailTab.style.display = 'block';
+  }
+}
+
+const PRICE_LIST = [
+  {name:'מחיצת גבס 10 ס"מ', unit:'מ"ר', price:250},
+  {name:'ציפוי קיר גבס', unit:'מ"ר', price:180},
+  {name:'ציפוי קיר גבס ירוק (רטיבות)', unit:'מ"ר', price:220},
+  {name:'תקרת גבס', unit:'מ"ר', price:300},
+  {name:'תקרה אקוסטית 60×60', unit:'מ"ר', price:220},
+  {name:'תקרת FOCUS E T-24', unit:'מ"ר', price:340},
+  {name:'סינר לוילון', unit:'מ"א', price:240},
+  {name:'שפכטל וצביעה על גבס', unit:'מ"ר', price:85},
+  {name:'קרמיקה רגילה', unit:'מ"ר', price:130},
+  {name:'פורצלן איכותי', unit:'מ"ר', price:240},
+  {name:'ריצוף SPC פרקט', unit:'מ"ר', price:195},
+  {name:'אריחים גדולים 60×120', unit:'מ"ר', price:400},
+  {name:'מדה מתפלסת', unit:'מ"ר', price:80},
+  {name:'שיש מטבח קיסרסטון', unit:'מ"א', price:1100},
+  {name:'שיש מטבח חברון', unit:'מ"א', price:500},
+  {name:'שקע חשמל רגיל', unit:'נק\'', price:380},
+  {name:'שקע מיזוג', unit:'נק\'', price:360},
+  {name:'נקודת תאורה', unit:'נק\'', price:380},
+  {name:'נקודת CAT7 תקשורת', unit:'נק\'', price:380},
+  {name:'לוח חשמל ראשי', unit:'קומפ\'', price:1800},
+  {name:'כבל הזנה ראשי', unit:'קומפ\'', price:6500},
+  {name:'מהנדס בודק חשמל', unit:'יח\'', price:1400},
+  {name:'ניתוק תאורה ומיזוג סוף יום', unit:'יח\'', price:750},
+  {name:'מונה חשמל', unit:'יח\'', price:1600},
+  {name:'לוח תקשורת', unit:'קומפ\'', price:1700},
+  {name:'נקודת אינסטלציה כיור', unit:'נק\'', price:1100},
+  {name:'ניקוז קו 4"', unit:'יח\'', price:550},
+  {name:'סילוקית משאבת שפכים', unit:'יח\'', price:1200},
+  {name:'ניקוז מזגן PVC', unit:'נק\'', price:800},
+  {name:'מחיצת זכוכית WLP1 סינגל', unit:'מ"ר', price:750},
+  {name:'מחיצת זכוכית WLP2 דאבל', unit:'מ"ר', price:1100},
+  {name:'דלת זכוכית', unit:'יח\'', price:3800},
+  {name:'SHOP DRAWINGS זכוכית', unit:'קומפ\'', price:1000},
+  {name:'צביעה לטקס קירות ותקרות', unit:'מ"ר', price:45},
+  {name:'שליכט גמר', unit:'מ"ר', price:130},
+  {name:'מטבח משרדי קומפלט', unit:'קומפ\'', price:17600},
+  {name:'ארון טכני מדפסת תקשורת', unit:'קומפ\'', price:16800},
+  {name:'דלת פנים MDF', unit:'יח\'', price:1600},
+  {name:'ניקיון סופי לאחר עבודה', unit:'קומפ\'', price:6600},
+  {name:'מכולת פסולת 12 מ"ק', unit:'יח\'', price:1350},
+  {name:'ניהול בטיחות', unit:'קומפ\'', price:4000},
+  {name:'גלאי עשן', unit:'יח\'', price:420},
+  {name:'לוח גילוי אש', unit:'קומפ\'', price:10000},
+  {name:'ספרינקלר', unit:'מ"ר', price:25},
+];
+
+function searchPrice(q) {
+  const box = document.getElementById('suggestions');
+  if (!q || q.length < 2) { box.style.display='none'; return; }
+  const hits = PRICE_LIST.filter(p => p.name.includes(q) || q.split(' ').some(w => p.name.includes(w)));
+  if (!hits.length) { box.style.display='none'; return; }
+  box.innerHTML = hits.slice(0,8).map(p =>
+    `<div onclick="selectPrice('${p.name}',${p.price},'${p.unit}')"
+      style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f2f5"
+      onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background=''"
+    >${p.name} — <strong>₪${p.price.toLocaleString('he-IL')}/${p.unit}</strong></div>`
+  ).join('');
+  box.style.display = 'block';
+}
+
+function selectPrice(name, price, unit) {
+  document.getElementById('eSearch').value = name;
+  document.getElementById('eDesc').value = name;
+  document.getElementById('ePrice').value = price;
+  document.getElementById('suggestions').style.display = 'none';
+  document.getElementById('priceFoundBox').style.display = 'block';
+  document.getElementById('priceNotFoundBox').style.display = 'none';
+  document.getElementById('priceFoundName').textContent = name;
+  document.getElementById('priceFoundVal').textContent = `₪${price.toLocaleString('he-IL')}/${unit}`;
+  updatePricePreview();
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#eSearch') && !e.target.closest('#suggestions'))
+    document.getElementById('suggestions').style.display = 'none';
+});
+
+function updatePricePreview() {
+  const price  = parseFloat(document.getElementById('ePrice').value) || 0;
+  const profit = parseFloat(document.getElementById('eProfit').value) || 0;
+  if (!price) { document.getElementById('ePricePreview').textContent=''; return; }
+  const final = Math.round(price * (1 + profit/100));
+  const vat   = Math.round(final * 1.18);
+  document.getElementById('ePricePreview').innerHTML =
+    `💰 מחיר סופי: <strong>₪${final.toLocaleString('he-IL')}</strong> לפני מע"מ | <strong>₪${vat.toLocaleString('he-IL')}</strong> כולל מע"מ`;
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  ['ePrice','eProfit'].forEach(id => document.getElementById(id)?.addEventListener('input', updatePricePreview));
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('eSendDate').value = today;
+});
+
+function generateEmail() {
+  const proj     = document.getElementById('eProjName').value.trim();
+  const client   = document.getElementById('eClientName').value.trim();
+  const desc     = document.getElementById('eDesc').value.trim();
+  const price    = parseFloat(document.getElementById('ePrice').value) || 0;
+  const profit   = parseFloat(document.getElementById('eProfit').value) || 0;
+  const sendDate = document.getElementById('eSendDate').value;
+  const deadline = document.getElementById('eDeadline').value;
+
+  if (!proj || !client || !desc || !price) {
+    alert('יש למלא: שם פרויקט, שם לקוח, תיאור ומחיר');
+    return;
+  }
+
+  const final    = Math.round(price * (1 + profit/100));
+  const vat      = Math.round(final * 1.18);
+  const dateStr  = sendDate ? new Date(sendDate).toLocaleDateString('he-IL') : new Date().toLocaleDateString('he-IL');
+  const dlStr    = deadline  ? new Date(deadline).toLocaleDateString('he-IL') : null;
+
+  const deadlineLine = dlStr
+    ? `אנא אשר/י את ביצוע העבודה בתשובה למייל זה עד תאריך ${dlStr}.`
+    : `אנא אשר/י את ביצוע העבודה בתשובה למייל זה.`;
+
+  const email =
+`נושא: אישור תוספת עבודה — פרויקט ${proj}
+
+${dateStr}
+
+לכבוד ${client},
+
+בהמשך לבקשתך, אנו מבקשים את אישורך לביצוע התוספת הבאה:
+
+פרויקט: ${proj}
+
+תיאור התוספת:
+${desc}
+
+מחיר התוספת: ₪${final.toLocaleString('he-IL')} לפני מע"מ (₪${vat.toLocaleString('he-IL')} כולל מע"מ)
+
+${deadlineLine}
+
+בכבוד רב,
+
+עידן קינן
+מנהל פרויקט
+בר ביצוע
+טל׳: 055-8813855
+www.barbuild.co.il`;
+
+  const out = document.getElementById('emailOut');
+  out.textContent = email;
+  out.style.display = 'block';
+  document.getElementById('copyEmailBtn').style.display = 'block';
+  out.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function copyEmail() {
+  const txt = document.getElementById('emailOut').textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.getElementById('copyEmailBtn');
+    btn.textContent = '✅ הועתק!';
+    setTimeout(() => btn.textContent = '📋 העתק מייל', 2000);
+  });
+}
+
+async function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  const r = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({password: pw})
+  });
+  const d = await r.json();
+  if (d.success) {
+    document.getElementById('loginPage').style.display = 'none';
+    document.getElementById('appPage').style.display = 'block';
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', {method:'POST'});
+  location.reload();
+}
+
+function selType(el) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  selProjectType = el.dataset.t;
+}
+
+function addFiles(newFiles) {
+  for (const f of newFiles) {
+    if (!files.find(x => x.name === f.name)) files.push(f);
+  }
+  renderFiles();
+}
+
+function renderFiles() {
+  const el = document.getElementById('fileList');
+  el.innerHTML = files.map((f,i) => `
+    <div class="file-item">
+      <span>${f.type.startsWith('image/') ? '🖼️' : '📄'}</span>
+      <span class="fn">${f.name}</span>
+      <span class="fr" onclick="removeFile(${i})">✕</span>
+    </div>`).join('');
+}
+
+function removeFile(i) { files.splice(i,1); renderFiles(); }
+
+const ua = document.getElementById('ua');
+ua.addEventListener('dragover', e => { e.preventDefault(); ua.classList.add('over'); });
+ua.addEventListener('dragleave', () => ua.classList.remove('over'));
+ua.addEventListener('drop', e => { e.preventDefault(); ua.classList.remove('over'); addFiles(e.dataTransfer.files); });
+
+async function generate() {
+  const gKey = document.getElementById('geminiKey').value.trim();
+  if (!gKey) return alert('יש להכניס Gemini API Key');
+  if (!files.length) return alert('יש להעלות לפחות תוכנית אחת');
+
+  setUI('loading');
+
+  const steps = ['step1','step2','step3','step4'];
+  let si = 0;
+  const iv = setInterval(() => {
+    if (si < steps.length) {
+      document.getElementById(steps[si]).classList.add('on');
+      if (si > 0) document.getElementById(steps[si-1]).classList.add('done');
+      si++;
     }
-  ],
-  "grand_total": 0,
-  "notes": ["הערות חשובות"]
-}"""
+  }, 2000);
 
+  const fd = new FormData();
+  fd.append('projectType', selProjectType);
+  fd.append('notes', document.getElementById('notes').value);
+  files.forEach(f => fd.append('plans', f));
 
-# ==========================================
-# ROUTES
-# ==========================================
+  try {
+    const r = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {'x-gemini-key': gKey},
+      body: fd
+    });
+    clearInterval(iv);
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error);
+    boqData = d.boq;
+    renderBOQ(d.boq);
+    setUI('result');
+  } catch(e) {
+    clearInterval(iv);
+    showErr(e.message);
+    setUI('error');
+  }
+}
 
-@app.route('/')
-def index():
-    return send_from_directory('public', 'index.html')
+function setUI(state) {
+  document.getElementById('emptyCard').style.display  = state==='empty'   ? '' : 'none';
+  document.getElementById('loadCard').style.display   = state==='loading' ? '' : 'none';
+  document.getElementById('boqOut').style.display     = state==='result'  ? '' : 'none';
+  document.getElementById('errBox').style.display     = 'none';
+  document.getElementById('genBtn').disabled = state==='loading';
+  document.getElementById('spin').style.display = state==='loading' ? 'block' : 'none';
+  document.getElementById('genTxt').textContent = state==='loading' ? 'מנתח...' : '⚡ צור כתב כמויות';
+  if (state==='loading') ['step1','step2','step3','step4'].forEach(id => {
+    document.getElementById(id).className = 'step';
+  });
+}
 
+function showErr(msg) {
+  const el = document.getElementById('errBox');
+  el.innerHTML = '❌ שגיאה: ' + msg;
+  el.style.display = 'block';
+}
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.json or {}
-    if data.get('password') == APP_PASSWORD:
-        session['logged_in'] = True
-        return jsonify({'success': True})
-    return jsonify({'success': False, 'error': 'סיסמה שגויה'}), 401
+function renderBOQ(boq) {
+  document.getElementById('boqTitle').textContent = 'כתב כמויות — ' + selProjectType;
+  const badge = document.getElementById('projBadge');
+  badge.textContent = boq.project_type || selProjectType;
+  badge.className = 'pbadge ' + (
+    (boq.project_type||'').includes('דירה') ? 'pb-apt' :
+    (boq.project_type||'').includes('מסח') ? 'pb-com' : 'pb-office'
+  );
+  document.getElementById('boqSummary').textContent = boq.project_summary || '';
 
+  const cont = document.getElementById('chapters');
+  cont.innerHTML = (boq.chapters||[]).map((ch,i) => `
+    <div class="chapter">
+      <div class="ch-head" onclick="toggleCh(${i})">
+        <span class="ch-num">${ch.chapter_num}</span>
+        <span class="ch-name">${ch.chapter_name}</span>
+        <span class="ch-total">${fmt(ch.chapter_total)}</span>
+      </div>
+      <div class="ch-body open" id="cb${i}">
+        <table>
+          <thead><tr>
+            <th class="tid">סעיף</th>
+            <th class="tdesc">תיאור</th>
+            <th class="tunit">יח'</th>
+            <th class="tqty">כמות</th>
+            <th class="tprice">מחיר</th>
+            <th class="ttotal">סה"כ</th>
+            <th class="tnotes">הערות</th>
+          </tr></thead>
+          <tbody>
+            ${(ch.items||[]).map(it=>`
+              <tr>
+                <td class="tid">${it.id||''}</td>
+                <td class="tdesc">${it.description||''}</td>
+                <td class="tunit">${it.unit||''}</td>
+                <td class="tqty">${it.quantity||''}</td>
+                <td class="tprice">${fmt(it.unit_price)}</td>
+                <td class="ttotal">${fmt(it.total)}</td>
+                <td class="tnotes">${it.notes||''}</td>
+              </tr>`).join('')}
+            <tr class="sub-row">
+              <td colspan="5" style="text-align:right">סה"כ פרק ${ch.chapter_num}</td>
+              <td class="ttotal">${fmt(ch.chapter_total)}</td><td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
 
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'success': True})
+  const vat = (boq.grand_total||0) * 0.18;
+  const tot = (boq.grand_total||0) + vat;
+  document.getElementById('gtCard').innerHTML = `
+    <div class="gt-line"><span>סכום לפני מע"מ</span><span class="amt">${fmt(boq.grand_total)}</span></div>
+    <div class="gt-line"><span>מע"מ 18%</span><span class="amt">${fmt(vat)}</span></div>
+    <div class="gt-line main"><span>סה"כ כולל מע"מ</span><span class="amt">${fmt(tot)}</span></div>`;
 
+  if (boq.notes?.length) {
+    document.getElementById('notesOut').style.display = 'block';
+    document.getElementById('notesList').innerHTML = boq.notes.map(n=>`<li>${n}</li>`).join('');
+  }
+}
 
-@app.route('/api/analyze', methods=['POST'])
-def analyze():
-    if not session.get('logged_in'):
-        return jsonify({'error': 'לא מחובר'}), 401
+function toggleCh(i) { document.getElementById('cb'+i).classList.toggle('open'); }
 
-    gemini_key = GEMINI_API_KEY or request.headers.get('x-gemini-key', '')
-    if not gemini_key:
-        return jsonify({'error': 'חסר Gemini API Key'}), 400
+function fmt(n) {
+  if (!n && n!==0) return '—';
+  return '₪' + Number(n).toLocaleString('he-IL',{maximumFractionDigits:0});
+}
 
-    project_type = request.form.get('projectType', 'משרדים')
-    notes_text   = request.form.get('notes', '')
-    files        = request.files.getlist('plans')
+function exportCSV() {
+  if (!boqData) return;
+  let csv = '\uFEFF';
+  csv += 'סעיף,תיאור,יחידה,כמות,מחיר יחידה,סה"כ,הערות\n';
+  (boqData.chapters||[]).forEach(ch => {
+    csv += `\n"פרק ${ch.chapter_num} — ${ch.chapter_name}",,,,,,\n`;
+    (ch.items||[]).forEach(it => {
+      csv += `"${it.id||''}","${it.description||''}","${it.unit||''}",${it.quantity||0},${it.unit_price||0},${it.total||0},"${it.notes||''}"\n`;
+    });
+    csv += `"סה"כ פרק",,,,,"${ch.chapter_total}",\n`;
+  });
+  csv += `\n"סה"כ כללי",,,,,"${boqData.grand_total}",\n`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download = `כבכ_${selProjectType}_${new Date().toLocaleDateString('he-IL').replace(/\//g,'-')}.csv`;
+  a.click();
+}
 
-    if not files:
-        return jsonify({'error': 'לא הועלו קבצים'}), 400
-
-    try:
-        genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-
-        # בנה תוכן
-        parts = [SYSTEM_PROMPT]
-
-        for f in files:
-            img_bytes = f.read()
-            try:
-                img = Image.open(io.BytesIO(img_bytes))
-                # המר ל-RGB אם צריך
-                if img.mode not in ('RGB', 'L'):
-                    img = img.convert('RGB')
-                buf = io.BytesIO()
-                img.save(buf, format='JPEG', quality=90)
-                parts.append({
-                    'mime_type': 'image/jpeg',
-                    'data': buf.getvalue()
-                })
-            except Exception:
-                # אם לא תמונה — נסה כ-bytes ישיר
-                parts.append({
-                    'mime_type': f.content_type or 'image/jpeg',
-                    'data': img_bytes
-                })
-
-        user_msg = f"\nסוג פרויקט: {project_type}\n"
-        if notes_text:
-            user_msg += f"הערות: {notes_text}\n"
-        user_msg += "\nנתח את התוכניות ותחזיר JSON בלבד."
-        parts.append(user_msg)
-
-        response = model.generate_content(parts)
-        raw = response.text
-
-        # חלץ JSON
-        json_match = re.search(r'\{[\s\S]*\}', raw)
-        boq = json.loads(json_match.group() if json_match else raw)
-
-        return jsonify({'success': True, 'boq': boq})
-
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 3000))
-    print(f"\n[OK] Server running on http://localhost:{port}")
-    app.run(host='0.0.0.0', port=port, debug=False)
+function copyAll() {
+  if (!boqData) return;
+  let txt = `כתב כמויות — ${selProjectType}\n${'='.repeat(40)}\n`;
+  (boqData.chapters||[]).forEach(ch => {
+    txt += `\nפרק ${ch.chapter_num} — ${ch.chapter_name}\n`;
+    (ch.items||[]).forEach(it => {
+      txt += `  ${it.id}: ${it.description} | ${it.quantity} ${it.unit} | ₪${it.unit_price} → ₪${it.total}\n`;
+    });
+    txt += `  סה"כ: ₪${ch.chapter_total}\n`;
+  });
+  txt += `\nסה"כ כולל מע"מ: ₪${Math.round((boqData.grand_total||0)*1.18)}`;
+  navigator.clipboard.writeText(txt).then(() => alert('הועתק!'));
+}
+</script>
+</body>
+</html>
