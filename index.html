@@ -148,7 +148,7 @@ tr:hover td{background:#fafbff}
 
 /* TABS */
 .tabs{display:flex;gap:0;margin-bottom:20px;background:white;border-radius:12px;padding:4px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-.tab-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;color:#888;transition:.2s;font-family:inherit}
+.tab-btn{flex:1;padding:10px;border:none;background:transparent;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;color:#888;transition:.2s;font-family:inherit}
 .tab-btn.active{background:linear-gradient(135deg,#1a1a2e,#0f3460);color:white}
 
 /* EMAIL FORM */
@@ -162,12 +162,50 @@ tr:hover td{background:#fafbff}
 .btn-copy-email{width:100%;padding:11px;background:#0f3460;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;transition:.2s}
 .btn-copy-email:hover{background:#1a1a2e}
 
+/* MATERIAL TAB */
+.mat-section-title{font-size:13px;font-weight:700;color:#1a1a2e;margin:16px 0 10px;padding-bottom:6px;border-bottom:2px solid #f0f2f5}
+.mat-settings{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.mat-setting-item{background:#f8f9ff;border-radius:10px;padding:12px}
+.mat-setting-item label{font-size:11px;color:#888;font-weight:600;display:block;margin-bottom:6px}
+.mat-setting-item select,.mat-setting-item input{width:100%;padding:8px;border:2px solid #e0e0e0;border-radius:8px;font-size:13px;font-family:inherit}
+.mat-setting-item select:focus,.mat-setting-item input:focus{outline:none;border-color:#0f3460}
+.mat-toggle{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.mat-toggle label{font-size:13px;color:#1a1a2e;cursor:pointer}
+.mat-toggle input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:#0f3460}
+.mat-element{background:#f8f9ff;border:2px solid #e8ecf0;border-radius:12px;padding:14px;margin-bottom:10px}
+.mat-element-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.mat-element select{flex:1;padding:8px 10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600}
+.mat-element select:focus{outline:none;border-color:#0f3460}
+.mat-remove{cursor:pointer;color:#e94560;font-size:22px;font-weight:700;line-height:1;padding:0 4px}
+.mat-dims{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mat-dim label{font-size:11px;color:#888;display:block;margin-bottom:4px;font-weight:600}
+.mat-dim input{width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;text-align:center;font-family:inherit}
+.mat-dim input:focus{outline:none;border-color:#0f3460}
+.btn-add-element{width:100%;padding:11px;border:2px dashed #0f3460;border-radius:10px;background:transparent;color:#0f3460;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:14px;transition:.2s;font-family:inherit}
+.btn-add-element:hover{background:#f0f4ff}
+.mat-results-table{width:100%;border-collapse:collapse;font-size:13px}
+.mat-results-table th{background:#1a1a2e;color:white;padding:10px 14px;text-align:right;font-weight:600}
+.mat-results-table td{padding:10px 14px;border-bottom:1px solid #f0f2f5}
+.mat-results-table tr:last-child td{border-bottom:none}
+.mat-results-table tr:hover td{background:#fafbff}
+.mat-qty{text-align:center;font-weight:700;font-size:15px;color:#0f3460}
+.mat-unit{text-align:center;color:#888;font-size:12px}
+.mat-total-row td{background:#f0f4ff!important;font-weight:700;border-top:2px solid #0f3460}
+.btn-copy-mat{width:100%;padding:11px;background:#0f3460;color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:12px;transition:.2s;font-family:inherit}
+.btn-copy-mat:hover{background:#1a1a2e}
+.mat-extra-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.mat-extra-item label{font-size:11px;color:#888;font-weight:600;display:block;margin-bottom:4px}
+.mat-extra-item input{width:100%;padding:9px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;text-align:center;font-family:inherit}
+.mat-extra-item input:focus{outline:none;border-color:#0f3460}
+
 /* MOBILE */
 @media(max-width:767px){
   .header{padding:12px 16px}
   .header-title h1{font-size:17px}
   .main{padding:12px}
   .card{padding:16px}
+  .mat-settings{grid-template-columns:1fr 1fr}
+  .tab-btn{font-size:11px;padding:8px 4px}
 }
 </style>
 </head>
@@ -199,11 +237,13 @@ tr:hover td{background:#fafbff}
   <div style="max-width:1100px;margin:0 auto;padding:16px 20px 0">
     <div class="tabs">
       <button class="tab-btn active" onclick="switchTab('boq',this)">⚡ כתב כמויות</button>
-      <button class="tab-btn" onclick="switchTab('email',this)">✉️ מייל תוספת ללקוח</button>
+      <button class="tab-btn" onclick="switchTab('material',this)">🧱 הזמנת חומר גבס</button>
+      <button class="tab-btn" onclick="switchTab('email',this)">✉️ מייל תוספת</button>
     </div>
   </div>
 
-  <div class="main">
+  <!-- BOQ TAB -->
+  <div class="main" id="boqMain">
 
     <!-- LEFT PANEL -->
     <div id="leftPanel">
@@ -296,6 +336,96 @@ tr:hover td{background:#fafbff}
     </div>
   </div>
 
+  <!-- MATERIAL TAB -->
+  <div id="materialTab" style="display:none;max-width:800px;margin:0 auto;padding:0 20px 30px">
+    <div class="card">
+      <div class="card-title">🧱 הזמנת חומר גבס</div>
+
+      <!-- GLOBAL SETTINGS -->
+      <div class="mat-section-title">⚙️ הגדרות כלליות</div>
+      <div class="mat-settings">
+        <div class="mat-setting-item">
+          <label>גודל פלטת גבס</label>
+          <select id="matBoardSize" onchange="onBoardSizeChange(this.value)">
+            <option value="2.6x1.2">2.60 × 1.20 מ' (רגיל)</option>
+            <option value="2.0x1.2">2.00 × 1.20 מ' (גישה מוגבלת)</option>
+            <option value="custom">מותאם אישית</option>
+          </select>
+          <div id="customBoardDiv" style="display:none;margin-top:8px;display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
+              <input type="number" id="customBoardH" placeholder="גובה מ'" step="0.1" style="padding:7px;border:2px solid #e0e0e0;border-radius:6px;font-size:12px;text-align:center">
+              <input type="number" id="customBoardW" placeholder="רוחב מ'" step="0.1" style="padding:7px;border:2px solid #e0e0e0;border-radius:6px;font-size:12px;text-align:center">
+            </div>
+          </div>
+        </div>
+        <div class="mat-setting-item">
+          <label>אורך ניצב CW</label>
+          <select id="matStudLen" onchange="onStudLenChange(this.value)">
+            <option value="3.0">3.00 מ'</option>
+            <option value="3.6">3.60 מ'</option>
+            <option value="custom">מותאם אישית</option>
+          </select>
+          <div id="customStudDiv" style="display:none;margin-top:8px">
+            <input type="number" id="customStudLen" placeholder="אורך מ'" step="0.1" style="width:100%;padding:7px;border:2px solid #e0e0e0;border-radius:6px;font-size:12px;text-align:center">
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div style="background:#f8f9ff;border-radius:10px;padding:12px">
+          <div class="mat-toggle">
+            <input type="checkbox" id="matInsulation" checked>
+            <label for="matInsulation">בידוד צמר סלעים</label>
+          </div>
+          <div class="mat-toggle">
+            <input type="checkbox" id="matDouble">
+            <label for="matDouble">שכבה כפולה גבס</label>
+          </div>
+        </div>
+        <div style="background:#f8f9ff;border-radius:10px;padding:12px">
+          <div class="mat-toggle">
+            <input type="checkbox" id="matJointCompound" checked>
+            <label for="matJointCompound">שפכטל + סרט</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ELEMENTS -->
+      <div class="mat-section-title">📐 רכיבי גבס</div>
+      <div id="matElements"></div>
+      <button class="btn-add-element" onclick="addMatElement()">+ הוסף רכיב</button>
+
+      <!-- EXTRAS -->
+      <div class="mat-section-title">🔧 תוספות</div>
+      <div class="mat-extra-row">
+        <div class="mat-extra-item">
+          <label>חיזוק עץ (מ"א)</label>
+          <input type="number" id="matWood" placeholder="0" step="0.1" min="0">
+        </div>
+        <div class="mat-extra-item">
+          <label>עץ חיבור גבס-זכוכית (מ"א)</label>
+          <input type="number" id="matGlass" placeholder="0" step="0.1" min="0">
+        </div>
+      </div>
+
+      <!-- CALCULATE -->
+      <button class="btn-gen" onclick="calculateMaterials()" style="margin-bottom:16px">
+        🧮 חשב הזמנת חומר
+      </button>
+
+      <!-- RESULTS -->
+      <div id="matResultsDiv" style="display:none">
+        <div class="mat-section-title">📦 רשימת חומרים להזמנה</div>
+        <div style="overflow-x:auto">
+          <table class="mat-results-table" id="matResultsTable">
+          </table>
+        </div>
+        <button class="btn-copy-mat" onclick="copyMaterials()">📋 העתק רשימה</button>
+      </div>
+
+    </div>
+  </div>
+
   <!-- EMAIL TAB -->
   <div id="emailTab" style="display:none;max-width:700px;margin:0 auto;padding:0 20px 30px">
     <div class="card">
@@ -358,20 +488,16 @@ let selProjectType = 'משרדים';
 let files = [];
 let boqData = null;
 
+// ---- TABS ----
 function switchTab(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const boqMain = document.querySelector('.main');
-  const emailTab = document.getElementById('emailTab');
-  if (tab === 'boq') {
-    boqMain.style.display = '';
-    emailTab.style.display = 'none';
-  } else {
-    boqMain.style.display = 'none';
-    emailTab.style.display = 'block';
-  }
+  document.getElementById('boqMain').style.display      = tab === 'boq'      ? '' : 'none';
+  document.getElementById('materialTab').style.display  = tab === 'material' ? 'block' : 'none';
+  document.getElementById('emailTab').style.display     = tab === 'email'    ? 'block' : 'none';
 }
 
+// ---- PRICE LIST ----
 const PRICE_LIST = [
   {name:'מחיצת גבס 10 ס"מ', unit:'מ"ר', price:250},
   {name:'ציפוי קיר גבס', unit:'מ"ר', price:180},
@@ -464,8 +590,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ['ePrice','eProfit'].forEach(id => document.getElementById(id)?.addEventListener('input', updatePricePreview));
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('eSendDate').value = today;
+  // Start with one element
+  addMatElement();
 });
 
+// ---- EMAIL GENERATOR ----
 function generateEmail() {
   const proj     = document.getElementById('eProjName').value.trim();
   const client   = document.getElementById('eClientName').value.trim();
@@ -531,6 +660,7 @@ function copyEmail() {
   });
 }
 
+// ---- LOGIN ----
 async function doLogin() {
   const pw = document.getElementById('pwInput').value;
   const r = await fetch('/api/login', {
@@ -552,12 +682,14 @@ async function doLogout() {
   location.reload();
 }
 
+// ---- TYPE ----
 function selType(el) {
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   selProjectType = el.dataset.t;
 }
 
+// ---- FILES ----
 function addFiles(newFiles) {
   for (const f of newFiles) {
     if (!files.find(x => x.name === f.name)) files.push(f);
@@ -577,11 +709,13 @@ function renderFiles() {
 
 function removeFile(i) { files.splice(i,1); renderFiles(); }
 
+// Drag & Drop
 const ua = document.getElementById('ua');
 ua.addEventListener('dragover', e => { e.preventDefault(); ua.classList.add('over'); });
 ua.addEventListener('dragleave', () => ua.classList.remove('over'));
 ua.addEventListener('drop', e => { e.preventDefault(); ua.classList.remove('over'); addFiles(e.dataTransfer.files); });
 
+// ---- GENERATE ----
 async function generate() {
   const gKey = document.getElementById('geminiKey').value.trim();
   if (!gKey) return alert('יש להכניס Gemini API Key');
@@ -632,7 +766,8 @@ function setUI(state) {
   document.getElementById('spin').style.display = state==='loading' ? 'block' : 'none';
   document.getElementById('genTxt').textContent = state==='loading' ? 'מנתח...' : '⚡ צור כתב כמויות';
   if (state==='loading') ['step1','step2','step3','step4'].forEach(id => {
-    document.getElementById(id).className = 'step';
+    const el = document.getElementById(id);
+    el.className = 'step';
   });
 }
 
@@ -642,6 +777,7 @@ function showErr(msg) {
   el.style.display = 'block';
 }
 
+// ---- RENDER BOQ ----
 function renderBOQ(boq) {
   document.getElementById('boqTitle').textContent = 'כתב כמויות — ' + selProjectType;
   const badge = document.getElementById('projBadge');
@@ -711,9 +847,10 @@ function fmt(n) {
   return '₪' + Number(n).toLocaleString('he-IL',{maximumFractionDigits:0});
 }
 
+// ---- EXPORT ----
 function exportCSV() {
   if (!boqData) return;
-  let csv = '\uFEFF';
+  let csv = '﻿';
   csv += 'סעיף,תיאור,יחידה,כמות,מחיר יחידה,סה"כ,הערות\n';
   (boqData.chapters||[]).forEach(ch => {
     csv += `\n"פרק ${ch.chapter_num} — ${ch.chapter_name}",,,,,,\n`;
@@ -741,6 +878,254 @@ function copyAll() {
   });
   txt += `\nסה"כ כולל מע"מ: ₪${Math.round((boqData.grand_total||0)*1.18)}`;
   navigator.clipboard.writeText(txt).then(() => alert('הועתק!'));
+}
+
+// ============================================
+// MATERIAL CALCULATOR
+// ============================================
+
+let matElements = [];
+let matIdCounter = 0;
+
+function onBoardSizeChange(val) {
+  document.getElementById('customBoardDiv').style.display = val === 'custom' ? 'block' : 'none';
+}
+
+function onStudLenChange(val) {
+  document.getElementById('customStudDiv').style.display = val === 'custom' ? 'block' : 'none';
+}
+
+function getBoardSize() {
+  const sel = document.getElementById('matBoardSize').value;
+  if (sel === '2.6x1.2') return {h: 2.6, w: 1.2, area: 2.6*1.2};
+  if (sel === '2.0x1.2') return {h: 2.0, w: 1.2, area: 2.0*1.2};
+  // custom
+  const h = parseFloat(document.getElementById('customBoardH').value) || 2.6;
+  const w = parseFloat(document.getElementById('customBoardW').value) || 1.2;
+  return {h, w, area: h*w};
+}
+
+function getStudLen() {
+  const sel = document.getElementById('matStudLen').value;
+  if (sel === '3.0') return 3.0;
+  if (sel === '3.6') return 3.6;
+  return parseFloat(document.getElementById('customStudLen').value) || 3.0;
+}
+
+function addMatElement() {
+  const id = ++matIdCounter;
+  matElements.push({id, type: 'מחיצה', length: '', height: ''});
+  renderMatElements();
+}
+
+function removeMatElement(id) {
+  matElements = matElements.filter(e => e.id !== id);
+  renderMatElements();
+}
+
+function updateMatElement(id, field, value) {
+  const el = matElements.find(e => e.id === id);
+  if (el) {
+    el[field] = value;
+    if (field === 'type') renderMatElements();
+  }
+}
+
+function renderMatElements() {
+  const cont = document.getElementById('matElements');
+  if (!matElements.length) {
+    cont.innerHTML = '<p style="color:#aaa;text-align:center;padding:16px;font-size:13px">לחץ "+ הוסף רכיב" להתחלה</p>';
+    return;
+  }
+  cont.innerHTML = matElements.map((el, i) => {
+    const isCeiling = el.type === 'תקרה';
+    const label2 = isCeiling ? "רוחב (מ')" : "גובה (מ')";
+    const label1 = "אורך מ\"א";
+    return `
+    <div class="mat-element">
+      <div class="mat-element-header">
+        <span style="font-weight:700;color:#0f3460;font-size:15px">${i+1}</span>
+        <select class="mat-element" onchange="updateMatElement(${el.id},'type',this.value)" style="flex:1;padding:8px 10px;border:2px solid #e0e0e0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600">
+          <option ${el.type==='מחיצה'?'selected':''} value="מחיצה">מחיצה / קיר גבס</option>
+          <option ${el.type==='סינר'?'selected':''} value="סינר">סינר</option>
+          <option ${el.type==='תקרה'?'selected':''} value="תקרה">תקרת גבס</option>
+          <option ${el.type==='חיפוי'?'selected':''} value="חיפוי">חיפוי קיר</option>
+        </select>
+        <span class="mat-remove" onclick="removeMatElement(${el.id})">×</span>
+      </div>
+      <div class="mat-dims">
+        <div class="mat-dim">
+          <label>${label1}</label>
+          <input type="number" step="0.1" min="0" value="${el.length}"
+            onchange="updateMatElement(${el.id},'length',+this.value)"
+            placeholder="0.0">
+        </div>
+        <div class="mat-dim">
+          <label>${label2}</label>
+          <input type="number" step="0.1" min="0" value="${el.height}"
+            onchange="updateMatElement(${el.id},'height',+this.value)"
+            placeholder="0.0">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calculateMaterials() {
+  const board = getBoardSize();
+  const studLen = getStudLen();
+  const hasInsulation = document.getElementById('matInsulation').checked;
+  const doubleLayer   = document.getElementById('matDouble').checked;
+  const hasJoint      = document.getElementById('matJointCompound').checked;
+  const woodReinf     = parseFloat(document.getElementById('matWood').value)  || 0;
+  const glassJunction = parseFloat(document.getElementById('matGlass').value) || 0;
+
+  const layers = doubleLayer ? 2 : 1;
+
+  // Accumulators
+  let totalTracks = 0;       // מסלולים UW
+  let totalStuds  = 0;       // ניצבים CW
+  let totalConnectors = 0;   // קונס
+  let totalBoards = 0;       // פלטות גבס
+  let totalInsulation = 0;   // בידוד מ"ר
+  let totalJoint = 0;        // שפכטל + סרט מ"ר
+  let totalCDProfiles = 0;   // CD לתקרה
+  let totalUDProfiles = 0;   // UD לתקרה
+  let totalHangers = 0;      // תליינים
+
+  let hasWalls    = false;
+  let hasCeiling  = false;
+
+  matElements.forEach(el => {
+    const len  = parseFloat(el.length)  || 0;
+    const dim2 = parseFloat(el.height)  || 0;
+    if (!len || !dim2) return;
+
+    const area = len * dim2;
+
+    if (el.type === 'מחיצה' || el.type === 'סינר') {
+      hasWalls = true;
+      // מסלולים: כל 3מ' × 2 (רצפה+תקרה)
+      const tracks = Math.ceil(len / 3) * 2;
+      // ניצבים: (אורך ÷ 0.4) + 2
+      const studs  = Math.floor(len / 0.4) + 2;
+      // קונס = ניצבים + מסלולים
+      const connectors = studs + tracks;
+      // פלטות (שתי פנים)
+      const boardsNeeded = Math.ceil(area * 2 * layers / board.area * 1.1);
+
+      totalTracks     += tracks;
+      totalStuds      += studs;
+      totalConnectors += connectors;
+      totalBoards     += boardsNeeded;
+      if (hasInsulation) totalInsulation += area;
+      if (hasJoint)      totalJoint      += area * 2 * layers;
+
+    } else if (el.type === 'תקרה') {
+      hasCeiling = true;
+      const width  = dim2; // רוחב
+      const length = len;  // אורך
+
+      // CD profiles: שורה כל 60 ס"מ לאורך הרוחב, כל שורה = ceil(אורך/3) יח'
+      const cdRows    = Math.ceil(width / 0.6) + 1;
+      const cdPerRow  = Math.ceil(length / 3);
+      const cdTotal   = cdRows * cdPerRow;
+
+      // UD profiles: היקף ÷ 3
+      const perimeter = 2 * (length + width);
+      const udTotal   = Math.ceil(perimeter / 3);
+
+      // תליינים: כל 120 ס"מ לאורך כל שורת CD
+      const hangersPerRow = Math.ceil(length / 1.2);
+      const hangersTotal  = cdRows * hangersPerRow;
+
+      // פלטות
+      const boardsNeeded = Math.ceil(area * layers / board.area * 1.1);
+
+      totalCDProfiles += cdTotal;
+      totalUDProfiles += udTotal;
+      totalHangers    += hangersTotal;
+      totalBoards     += boardsNeeded;
+      if (hasJoint)    totalJoint += area * layers;
+
+    } else if (el.type === 'חיפוי') {
+      hasWalls = true;
+      // רק פלטות + שפכטל, ללא שלד
+      const boardsNeeded = Math.ceil(area * layers / board.area * 1.1);
+      totalBoards += boardsNeeded;
+      if (hasJoint) totalJoint += area * layers;
+    }
+  });
+
+  // Build results
+  const results = [];
+  const boardLabel = `פלטות גבס ${board.h.toFixed(2)}×${board.w.toFixed(2)} מ'${doubleLayer ? ' (×2 שכבות)' : ''}`;
+
+  if (totalTracks > 0)     results.push({cat:'שלד', name:`מסלולים UW (3 מ')`, qty: totalTracks,     unit:"יח'"});
+  if (totalStuds > 0)      results.push({cat:'שלד', name:`ניצבים CW (${studLen.toFixed(1)} מ')`, qty: totalStuds, unit:"יח'"});
+  if (totalConnectors > 0) results.push({cat:'שלד', name:'קונס (תפסנים)', qty: totalConnectors, unit:"יח'"});
+  if (totalCDProfiles > 0) results.push({cat:'תקרה', name:"פרופיל CD ראשי (3 מ')", qty: totalCDProfiles, unit:"יח'"});
+  if (totalUDProfiles > 0) results.push({cat:'תקרה', name:"פרופיל UD היקף (3 מ')", qty: totalUDProfiles, unit:"יח'"});
+  if (totalHangers > 0)    results.push({cat:'תקרה', name:'תליינים / עוגנים', qty: totalHangers, unit:"יח'"});
+  if (totalBoards > 0)     results.push({cat:'גבס', name: boardLabel, qty: totalBoards, unit:"יח'"});
+  if (totalInsulation > 0) results.push({cat:'גבס', name:'בידוד צמר סלעים 60-80 ק"ג', qty: Math.ceil(totalInsulation), unit:'מ"ר'});
+  if (totalJoint > 0)      results.push({cat:'גבס', name:'שפכטל + סרט', qty: Math.ceil(totalJoint), unit:'מ"ר'});
+  if (woodReinf > 0)       results.push({cat:'עץ', name:'חיזוק עץ (לתליות)', qty: woodReinf, unit:'מ"א'});
+  if (glassJunction > 0)   results.push({cat:'עץ', name:'עץ חיבור גבס-זכוכית', qty: glassJunction, unit:'מ"א'});
+
+  if (!results.length) {
+    alert('יש להוסיף רכיבים עם מידות');
+    return;
+  }
+
+  // Group by category
+  const cats = [...new Set(results.map(r => r.cat))];
+  const catColors = {שלד:'#1a1a2e', תקרה:'#0f3460', גבס:'#27ae60', עץ:'#795548'};
+
+  let tableHTML = '<thead>';
+  tableHTML += '<tr><th>פריט</th><th style="text-align:center">כמות</th><th style="text-align:center">יחידה</th></tr>';
+  tableHTML += '</thead><tbody>';
+
+  cats.forEach(cat => {
+    const catResults = results.filter(r => r.cat === cat);
+    const color = catColors[cat] || '#1a1a2e';
+    tableHTML += `<tr><td colspan="3" style="background:${color};color:white;font-weight:700;padding:8px 14px;font-size:12px">— ${cat} —</td></tr>`;
+    catResults.forEach(r => {
+      tableHTML += `
+        <tr>
+          <td style="font-size:13px">${r.name}</td>
+          <td class="mat-qty">${r.qty}</td>
+          <td class="mat-unit">${r.unit}</td>
+        </tr>`;
+    });
+  });
+
+  tableHTML += '</tbody>';
+  document.getElementById('matResultsTable').innerHTML = tableHTML;
+  document.getElementById('matResultsDiv').style.display = 'block';
+  document.getElementById('matResultsDiv').scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  // Store for copy
+  window.lastMatResults = results;
+  window.lastBoardLabel = boardLabel;
+  window.lastStudLen = studLen;
+}
+
+function copyMaterials() {
+  if (!window.lastMatResults) return;
+  let txt = 'רשימת חומרים להזמנה — גבס\n' + '='.repeat(35) + '\n';
+  const cats = [...new Set(window.lastMatResults.map(r => r.cat))];
+  cats.forEach(cat => {
+    txt += `\n— ${cat} —\n`;
+    window.lastMatResults.filter(r => r.cat === cat).forEach(r => {
+      txt += `${r.name}: ${r.qty} ${r.unit}\n`;
+    });
+  });
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.querySelector('.btn-copy-mat');
+    btn.textContent = '✅ הועתק!';
+    setTimeout(() => btn.textContent = '📋 העתק רשימה', 2000);
+  });
 }
 </script>
 </body>
